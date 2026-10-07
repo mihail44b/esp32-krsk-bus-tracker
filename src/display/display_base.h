@@ -50,4 +50,10 @@ public:
      * @brief Индикация ошибки (сетевой или синтаксической)
      */
     virtual void showError(const String& errorMessage) = 0;
+
+    /**
+     * @brief Фоновое обновление экрана (анимации, циклическая смена страниц прогнозов).
+     * Вызывается в каждом проходе loop().
+     */
+    virtual void update() {}
 };

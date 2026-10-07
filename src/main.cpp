@@ -13,6 +13,7 @@
 #include "network/wifi_manager.h"
 #include "api/kgt_api_client.h"
 #include "display/serial_display.h"
+#include "display/lcd1602_display.h"
 
 // Сервисные компоненты
 static WiFiManager wifiManager;
@@ -32,7 +33,16 @@ void setup() {
     Serial.println("========================================================");
 
     // Инициализация интерфейса вывода
+#if defined(USE_LCD1602) && (USE_LCD1602 == 1)
+    Serial.println("[MAIN] Выбран аппаратный дисплей LCD 1602 (I2C)");
+    display = std::unique_ptr<DisplayBase>(new Lcd1602Display(
+        LCD_I2C_ADDR, LCD_COLS, LCD_ROWS, LCD_SDA_PIN, LCD_SCL_PIN, LCD_PAGE_ROTATE_MS
+    ));
+#else
+    Serial.println("[MAIN] Выбран режим вывода Serial Monitor");
     display = std::unique_ptr<DisplayBase>(new SerialDisplay(SERIAL_BAUD_RATE));
+#endif
+
     display->init();
 
     // Подключение к Wi-Fi
@@ -42,7 +52,7 @@ void setup() {
     if (connected) {
         display->showConnected(wifiManager.getIP());
     } else {
-        display->showError("Не удалось подключиться к Wi-Fi при запуске. Переход в фоновый поиск сети...");
+        display->showError("Wi-Fi Error!");
     }
 }
 
@@ -50,8 +60,11 @@ void loop() {
     // Фоновое поддержание Wi-Fi соединения (авто-реконнект)
     wifiManager.update();
 
+    // Фоновое обновление экрана (прокрутка страниц автобусов)
+    display->update();
+
     if (!wifiManager.isConnected()) {
-        delay(200);
+        delay(100);
         return;
     }
 
@@ -75,5 +88,6 @@ void loop() {
         }
     }
 
-    delay(100); // Даем отработать фоновым задачам FreeRTOS/ESP-IDF
+    delay(50); // Небольшая задержка для FreeRTOS и плавности loop
 }
+
