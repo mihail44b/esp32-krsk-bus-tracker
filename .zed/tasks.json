@@ -1,0 +1,44 @@
+[
+  {
+    "label": "PlatformIO: Build",
+    "command": "pio",
+    "args": ["run"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "PlatformIO: Upload",
+    "command": "pio",
+    "args": ["run", "-t", "upload"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "PlatformIO: Monitor",
+    "command": "pio",
+    "args": ["device", "monitor"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "PlatformIO: Upload & Monitor",
+    "command": "pio",
+    "args": ["run", "-t", "upload", "-t", "monitor"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "PlatformIO: Generate compile_commands.json (Clangd LSP)",
+    "command": "pio",
+    "args": ["run", "-t", "compiledb"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "PlatformIO: Clean",
+    "command": "pio",
+    "args": ["run", "-t", "clean"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  }
+]
