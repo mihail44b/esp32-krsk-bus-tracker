@@ -34,7 +34,7 @@ void SerialDisplay::showArrivals(const String& stopId, const String& systemTime,
     Serial.println("----------+--------+----------+------------+----------------------------------------------");
 
     for (const auto& item : arrivals) {
-        char waitBuf[16];
+        char waitBuf[32];
         if (item.minutesRemaining >= 0) {
             snprintf(waitBuf, sizeof(waitBuf), "~%d мин", item.minutesRemaining);
         } else {

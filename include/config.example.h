@@ -15,8 +15,10 @@
 // =============================================================================
 #define WIFI_SSID             "YOUR_WIFI_SSID"
 #define WIFI_PASSWORD         "YOUR_WIFI_PASSWORD"
-#define WIFI_CONNECT_TIMEOUT  20000   // Таймаут первой попытки подключения (мс)
+#define WIFI_AP_SSID          "KRSK-Bus-Setup" // Имя точки доступа для настройки Wi-Fi
+#define WIFI_CONNECT_TIMEOUT  10000   // Таймаут первой попытки подключения (мс)
 #define WIFI_RECONNECT_DELAY  10000   // Интервал повторных попыток при обрыве (мс)
+#define BUTTON_BOOT_PIN       0       // Пин встроенной кнопки BOOT (удержание 3с для сброса Wi-Fi)
 
 // =============================================================================
 // МКУ «Красноярскгортранс» API
