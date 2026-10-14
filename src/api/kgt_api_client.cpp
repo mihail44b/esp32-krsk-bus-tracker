@@ -38,10 +38,57 @@ int KgtApiClient::calculateMinutesRemaining(const String& sysTime, const String&
     return -1;
 }
 
+bool KgtApiClient::startSession() {
+    WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(_timeoutMs / 1000);
+
+    HTTPClient http;
+    http.setTimeout(_timeoutMs);
+
+    if (!http.begin(client, _apiUrl)) {
+        return false;
+    }
+
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("X-Requested-With", "XMLHttpRequest");
+    http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+    String payload = "{\"jsonrpc\":\"2.0\",\"method\":\"startSession\",\"params\":{},\"id\":1}";
+    int httpCode = http.POST(payload);
+
+    if (httpCode != HTTP_CODE_OK) {
+        http.end();
+        return false;
+    }
+
+    String responsePayload = http.getString();
+    http.end();
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, responsePayload);
+    if (error) {
+        return false;
+    }
+
+    if (doc["result"].is<JsonObject>() && doc["result"]["sid"].is<const char*>()) {
+        _sid = doc["result"]["sid"].as<String>();
+        Serial.printf("[API] Получена новая сессия (sid): %s\n", _sid.c_str());
+        return true;
+    }
+
+    return false;
+}
+
 StopArrivalsResult KgtApiClient::getStopArrivals(const String& stopId) {
     StopArrivalsResult result;
     result.success = false;
     result.httpStatusCode = -1;
+
+    // Если SID еще не получен, пробуем открыть сессию
+    if (_sid.length() == 0) {
+        startSession();
+    }
 
     WiFiClientSecure client;
     // Отключаем строгую проверку CA сертификата для легковесного подключения к серверу
@@ -89,6 +136,13 @@ StopArrivalsResult KgtApiClient::getStopArrivals(const String& stopId) {
     // Проверяем наличие ошибки JSON-RPC
     if (doc["error"].is<JsonObject>()) {
         const char* msg = doc["error"]["message"];
+        // Если сессия истекла, запрашиваем новую и пробуем один раз повторить
+        if (msg && strcmp(msg, "Session error") == 0) {
+            Serial.println("[API] Сессия истекла (Session error). Автоматическое обновление сессии...");
+            if (startSession()) {
+                return getStopArrivals(stopId);
+            }
+        }
         result.errorMessage = "RPC ошибка: " + String(msg ? msg : "Неизвестная ошибка");
         return result;
     }
