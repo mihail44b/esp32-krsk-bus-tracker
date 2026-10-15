@@ -1,0 +1,15 @@
+CompileFlags:
+  CompilationDatabase: "."
+  Add:
+    - --target=xtensa-esp32-elf
+    - -D__extension__=
+    - -D_GLIBCXX_USE_C99
+    - -Wno-unknown-warning-option
+    - -Wno-unused-command-line-argument
+  Remove:
+    - -mlongcalls
+    - -mtext-section-literals
+    - -fstrict-volatile-bitfields
+    - -fno-tree-switch-conversion
+    - -free
+    - -fipa-pta

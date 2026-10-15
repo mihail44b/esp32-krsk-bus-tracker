@@ -14,6 +14,7 @@
 #include "api/kgt_api_client.h"
 #include "display/serial_display.h"
 #include "display/lcd1602_display.h"
+#include "display/st7789_display.h"
 
 // Сервисные компоненты
 static WiFiManager wifiManager;
@@ -33,7 +34,12 @@ void setup() {
     Serial.println("========================================================");
 
     // Инициализация интерфейса вывода
-#if defined(USE_LCD1602) && (USE_LCD1602 == 1)
+#if defined(USE_ST7789) && (USE_ST7789 == 1)
+    Serial.println("[MAIN] Выбран цветной IPS дисплей ST7789 (SPI)");
+    display = std::unique_ptr<DisplayBase>(new St7789Display(
+        TFT_CS_PIN, TFT_DC_PIN, TFT_RST_PIN, TFT_MOSI_PIN, TFT_SCLK_PIN, TFT_PAGE_ROTATE_MS
+    ));
+#elif defined(USE_LCD1602) && (USE_LCD1602 == 1)
     Serial.println("[MAIN] Выбран аппаратный дисплей LCD 1602 (I2C)");
     display = std::unique_ptr<DisplayBase>(new Lcd1602Display(
         LCD_I2C_ADDR, LCD_COLS, LCD_ROWS, LCD_SDA_PIN, LCD_SCL_PIN, LCD_PAGE_ROTATE_MS
@@ -42,6 +48,7 @@ void setup() {
     Serial.println("[MAIN] Выбран режим вывода Serial Monitor");
     display = std::unique_ptr<DisplayBase>(new SerialDisplay(SERIAL_BAUD_RATE));
 #endif
+
 
     display->init();
 

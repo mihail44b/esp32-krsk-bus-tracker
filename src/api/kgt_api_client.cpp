@@ -38,10 +38,71 @@ int KgtApiClient::calculateMinutesRemaining(const String& sysTime, const String&
     return -1;
 }
 
-StopArrivalsResult KgtApiClient::getStopArrivals(const String& stopId) {
+bool KgtApiClient::startSession() {
+    WiFiClientSecure client;
+    client.setInsecure();
+    client.setTimeout(_timeoutMs / 1000);
+
+    HTTPClient http;
+    http.setTimeout(_timeoutMs);
+
+    if (!http.begin(client, _apiUrl)) {
+        Serial.println("[KGT API] Ошибка: не удалось открыть HTTPS соединение для startSession");
+        return false;
+    }
+
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("X-Requested-With", "XMLHttpRequest");
+    http.addHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+
+    JsonDocument doc;
+    doc["jsonrpc"] = "2.0";
+    doc["method"] = "startSession";
+    doc["params"].to<JsonObject>();
+    doc["id"] = 1;
+
+    String requestBody;
+    serializeJson(doc, requestBody);
+
+    int httpCode = http.POST(requestBody);
+    if (httpCode != HTTP_CODE_OK) {
+        Serial.printf("[KGT API] startSession HTTP ошибка: %d (%s)\n", httpCode, http.errorToString(httpCode).c_str());
+        http.end();
+        return false;
+    }
+
+    String responsePayload = http.getString();
+    http.end();
+
+    JsonDocument resDoc;
+    DeserializationError error = deserializeJson(resDoc, responsePayload);
+    if (error) {
+        Serial.printf("[KGT API] startSession: ошибка парсинга JSON: %s\n", error.c_str());
+        return false;
+    }
+
+    if (!resDoc["result"]["sid"].is<const char*>()) {
+        Serial.println("[KGT API] startSession: ответ не содержит sid!");
+        return false;
+    }
+
+    _sid = resDoc["result"]["sid"].as<String>();
+    Serial.printf("[KGT API] Успешно получен новый SID сессии: %s\n", _sid.c_str());
+    return true;
+}
+
+StopArrivalsResult KgtApiClient::getStopArrivals(const String& stopId, bool retryOnSessionError) {
     StopArrivalsResult result;
     result.success = false;
     result.httpStatusCode = -1;
+
+    // Если SID еще не получен, запрашиваем его у сервера
+    if (_sid.length() == 0) {
+        if (!startSession()) {
+            result.errorMessage = "Не удалось инициализировать сессию (startSession)";
+            return result;
+        }
+    }
 
     WiFiClientSecure client;
     // Отключаем строгую проверку CA сертификата для легковесного подключения к серверу
@@ -88,8 +149,17 @@ StopArrivalsResult KgtApiClient::getStopArrivals(const String& stopId) {
 
     // Проверяем наличие ошибки JSON-RPC
     if (doc["error"].is<JsonObject>()) {
-        const char* msg = doc["error"]["message"];
-        result.errorMessage = "RPC ошибка: " + String(msg ? msg : "Неизвестная ошибка");
+        String msg = doc["error"]["message"] | "Неизвестная ошибка";
+
+        // Если сессия протухла, автоматически обновляем SID и повторяем запрос
+        if (retryOnSessionError && (msg.indexOf("Session") >= 0 || msg.indexOf("session") >= 0)) {
+            Serial.println("[KGT API] Сессия устарела (Session error). Автоматически обновляем SID...");
+            if (startSession()) {
+                return getStopArrivals(stopId, false);
+            }
+        }
+
+        result.errorMessage = "RPC ошибка: " + msg;
         return result;
     }
 

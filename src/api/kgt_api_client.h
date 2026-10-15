@@ -16,16 +16,25 @@ public:
      */
     explicit KgtApiClient(
         const String& apiUrl = "https://mu-kgt.ru/informing/api/rpc.php",
-        const String& sid = "8ED6BFEA-3721-4F24-BDDB-F55EC31D3EE6",
+        const String& sid = "",
         unsigned long timeoutMs = 10000
     );
 
     /**
      * @brief Запросить прогноз прибытия транспорта для заданной остановки
      * @param stopId Идентификатор остановки (например, "646")
+     * @param retryOnSessionError Автоматически запросить новый SID при ошибке сессии
      * @return StopArrivalsResult структура с прогнозами и метаданными
      */
-    StopArrivalsResult getStopArrivals(const String& stopId);
+    StopArrivalsResult getStopArrivals(const String& stopId, bool retryOnSessionError = true);
+
+    /**
+     * @brief Запросить у сервера новый идентификатор сессии (SID) через метод startSession
+     * @return true если сессия успешно создана и SID получен
+     */
+    bool startSession();
+
+    String getSid() const { return _sid; }
 
     void setApiUrl(const String& url) { _apiUrl = url; }
     void setSid(const String& sid) { _sid = sid; }

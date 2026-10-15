@@ -40,5 +40,19 @@
     "args": ["run", "-t", "clean"],
     "use_new_terminal": false,
     "allow_concurrent_runs": false
+  },
+  {
+    "label": "Test ST7789: Build",
+    "command": "pio",
+    "args": ["run", "-e", "test_st7789"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "Test ST7789: Upload & Monitor",
+    "command": "pio",
+    "args": ["run", "-e", "test_st7789", "-t", "upload", "-t", "monitor"],
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false
   }
 ]
